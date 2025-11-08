@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 :root {
@@ -36,7 +35,7 @@ header span{line-height: 60px; font-size: 24px; color: #1c1c1c; margin-left: 30p
 main{height: calc(100% - 60px);}
 section{float: left; height: 100%;}
 .s-game{width: 70%;}
-.s-btns{width: 30%; border-left: 4px groove silver;}
+.s-btns{width: 30%; border-left: 4px groove silver; position: relative;}
 .s-game{display: flex; justify-content: center; align-items: center;}
 /* === Заменить текущий .c-game (рамка слота) === */
 .c-game{
@@ -60,16 +59,287 @@ section{float: left; height: 100%;}
     0 0 80px rgba(255,115,250,0.12),    /* мягкое вторичное свечение */
     inset 0 0 40px rgba(109,243,255,0.04); /* лёгкий внутренний glow */
 }
+
+/* Надпись MELLSTROY.GAMES над слот-машиной */
+.game-title {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  color: var(--text-light);
+  text-shadow: 
+    0 0 10px var(--accent1),
+    0 0 20px var(--accent1),
+    0 0 30px var(--accent2),
+    0 0 40px var(--accent3);
+  letter-spacing: 3px;
+  white-space: nowrap;
+  z-index: 10;
+  animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  0% {
+    text-shadow: 
+      0 0 10px var(--accent1),
+      0 0 20px var(--accent1),
+      0 0 30px var(--accent2);
+  }
+  100% {
+    text-shadow: 
+      0 0 15px var(--accent1),
+      0 0 30px var(--accent1),
+      0 0 45px var(--accent2),
+      0 0 60px var(--accent3);
+  }
+}
+
+/* Декоративные кристаллы */
+.crystal {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  filter: drop-shadow(0 0 15px rgba(201, 0, 255, 0.6));
+  animation: crystalGlow 3s ease-in-out infinite;
+}
+
+.crystal img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Удаление белого фона - несколько методов для совместимости */
+  /* Метод 1: mix-blend-mode для темного фона - скрывает белый */
+  /* Используем multiply вместо screen - белый становится прозрачным на темном фоне */
+  mix-blend-mode: multiply;
+  /* Метод 2: filter для удаления белого и улучшения видимости */
+  filter: brightness(1.1) contrast(1.4) saturate(1.6) drop-shadow(0 0 2px rgba(0,0,0,0.3));
+  /* Метод 3: CSS-фильтр для удаления белого фона (дополнительно к JS) */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Гарантируем, что белый фон не отображается */
+  background: transparent !important;
+  /* Улучшаем обработку прозрачности */
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  /* Дополнительный CSS-фильтр для удаления белого фона */
+  -webkit-filter: brightness(1.1) contrast(1.4) saturate(1.6) drop-shadow(0 0 2px rgba(0,0,0,0.3));
+}
+
+/* Позиционирование кристаллов */
+/* Кристаллы в нижних углах слот-машины */
+.crystal-1 {
+  bottom: -30px;
+  left: -20px;
+  width: 80px;
+  height: 120px;
+  animation-delay: 0s;
+  transform: rotate(-25deg);
+}
+
+.crystal-2 {
+  bottom: -35px;
+  right: -15px;
+  width: 90px;
+  height: 130px;
+  animation-delay: 0.6s;
+  transform: rotate(30deg);
+}
+
+.crystal-3 {
+  top: 5%;
+  left: -15px;
+  width: 50px;
+  height: 70px;
+  animation-delay: 1.2s;
+  transform: rotate(-20deg);
+}
+
+.crystal-4 {
+  bottom: 10%;
+  left: -25px;
+  width: 75px;
+  height: 110px;
+  animation-delay: 1.8s;
+  transform: rotate(-20deg);
+}
+
+.crystal-5 {
+  top: 15%;
+  right: -20px;
+  width: 85px;
+  height: 120px;
+  animation-delay: 2.4s;
+  transform: rotate(25deg);
+}
+
+/* Кристалл под кнопкой SPIN */
+.crystal-spin {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) rotate(15deg);
+  width: 70px;
+  height: 100px;
+  animation-delay: 1.2s;
+  z-index: 5;
+}
+
+/* Анимация свечения кристаллов */
+@keyframes crystalGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px rgba(201, 0, 255, 0.6)) 
+            drop-shadow(0 0 25px rgba(255, 115, 250, 0.4))
+            brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 25px rgba(201, 0, 255, 0.9)) 
+            drop-shadow(0 0 40px rgba(255, 115, 250, 0.7))
+            drop-shadow(0 0 60px rgba(109, 243, 255, 0.5))
+            brightness(1.15);
+    transform: scale(1.05);
+  }
+}
+
 .line{position: absolute; font-weight: bold; font-size: 14px;}
 .line-1{color: rgb(255, 0, 0); top: 50%; transform: translateY(-50%);}
 .line-2{color: rgb(255, 255, 255); top: 15%;}
 .line-3{color: rgb(225, 0, 255); bottom: 15%;}
 .line.left{left: -18px;}
 .line.right{right: -18px;}
-#game-area{width: 800px; height: 480px; background-color: #fff; overflow: hidden;  box-shadow: inset 0px 0px 85px -12px rgba(0,0,0,0.55);}
-.c-column{position: relative; float: left; min-height: 100%; width: 20%;border-left: 1px solid #1c1c1c;}
+
+/* Анимация для выигрышных линий */
+.line.win-line {
+  animation: lineWinAppear 0.5s ease-out, lineWinBlink 1s ease-in-out infinite 0.5s;
+  z-index: 10;
+}
+
+@keyframes lineWinAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+    text-shadow: 0 0 0px rgba(201,0,255,0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    text-shadow: 0 0 10px rgba(201,0,255,0.8);
+  }
+}
+
+.line-2.win-line {
+  animation: lineWinAppear2 0.5s ease-out, lineWinBlink 1s ease-in-out infinite 0.5s;
+}
+
+@keyframes lineWinAppear2 {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    text-shadow: 0 0 0px rgba(201,0,255,0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    text-shadow: 0 0 10px rgba(201,0,255,0.8);
+  }
+}
+
+.line-3.win-line {
+  animation: lineWinAppear3 0.5s ease-out, lineWinBlink 1s ease-in-out infinite 0.5s;
+}
+
+@keyframes lineWinAppear3 {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    text-shadow: 0 0 0px rgba(201,0,255,0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    text-shadow: 0 0 10px rgba(201,0,255,0.8);
+  }
+}
+
+@keyframes lineWinBlink {
+  0%, 100% {
+    color: rgb(201, 0, 255);
+    text-shadow: 
+      0 0 10px rgba(201, 0, 255, 0.8),
+      0 0 20px rgba(201, 0, 255, 0.6),
+      0 0 30px rgba(255, 115, 250, 0.4);
+  }
+  50% {
+    color: rgb(255, 115, 250);
+    text-shadow: 
+      0 0 20px rgba(201, 0, 255, 1),
+      0 0 40px rgba(201, 0, 255, 0.8),
+      0 0 60px rgba(255, 115, 250, 0.6),
+      0 0 80px rgba(109, 243, 255, 0.4);
+  }
+}
+
+/* Горизонтальная выигрышная линия */
+.win-line-horizontal {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  z-index: 8;
+  pointer-events: none;
+  transform: translateY(-50%);
+  animation: winLineHorizontalAppear 0.5s ease-out, winLineHorizontalBlink 1s ease-in-out infinite 0.5s;
+}
+
+@keyframes winLineHorizontalAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0);
+    box-shadow: 0 0 0px rgba(201,0,255,0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(1);
+    box-shadow: 0 0 20px rgba(201,0,255,0.8);
+  }
+}
+
+@keyframes winLineHorizontalBlink {
+  0%, 100% {
+    background: linear-gradient(90deg, 
+      transparent 0%,
+      rgba(201, 0, 255, 0.6) 10%,
+      rgba(255, 115, 250, 0.8) 50%,
+      rgba(201, 0, 255, 0.6) 90%,
+      transparent 100%
+    );
+    box-shadow: 
+      0 0 15px rgba(201, 0, 255, 0.8),
+      0 0 30px rgba(201, 0, 255, 0.6),
+      0 0 45px rgba(255, 115, 250, 0.4);
+    height: 4px;
+  }
+  50% {
+    background: linear-gradient(90deg, 
+      transparent 0%,
+      rgba(201, 0, 255, 1) 10%,
+      rgba(255, 115, 250, 1) 50%,
+      rgba(201, 0, 255, 1) 90%,
+      transparent 100%
+    );
+    box-shadow: 
+      0 0 25px rgba(201, 0, 255, 1),
+      0 0 50px rgba(201, 0, 255, 0.9),
+      0 0 75px rgba(255, 115, 250, 0.7),
+      0 0 100px rgba(109, 243, 255, 0.5);
+    height: 6px;
+  }
+}
+#game-area{position: relative; width: 800px; height: 480px; background-color: #fff; overflow: hidden;  box-shadow: inset 0px 0px 85px -12px rgba(0,0,0,0.55);}
+.c-column{position: relative; float: left; min-height: 100%; width: 20%;border-left: 1px solid #1c1c1c; overflow: visible; /* Разрешаем видимость элементов за пределами колонки во время анимации */}
 .c-column:last-child{border-right: 1px solid #1c1c1c;}
-.column{position: absolute; left: 0; bottom: 0; width: 100%; height: auto;}
+.column{position: absolute; left: 0; bottom: 0; width: 100%; height: auto; overflow: visible; /* Разрешаем видимость элементов во время анимации */}
 .column:nth-child(1){transition: 1s;}
 .column:nth-child(2){transition: 2s;}
 .column:nth-child(3){transition: 3s;}
@@ -175,6 +445,21 @@ header {
   .c-btn button {
     transform: scale(0.9);
   }
+  .game-title {
+    font-size: 16px;
+    top: -45px;
+    letter-spacing: 2px;
+  }
+  /* Кристаллы на планшетах */
+  .crystal {
+    width: 60px !important;
+    height: 90px !important;
+  }
+  .crystal-1 { width: 60px; height: 90px; }
+  .crystal-2 { width: 75px; height: 105px; }
+  .crystal-4 { width: 70px; height: 100px; }
+  .crystal-5 { width: 65px; height: 90px; }
+  .crystal-spin { width: 55px; height: 80px; }
 }
 
 /* Телефоны — ширина < 768px */
@@ -243,6 +528,23 @@ header {
     height: 120px; /* меньше высота, чтобы влезали символы */
   }
 
+  .game-title {
+    font-size: 14px;
+    top: -40px;
+    letter-spacing: 1.5px;
+  }
+  
+  /* Кристаллы на телефонах - уменьшаем размер */
+  .crystal {
+    width: 40px !important;
+    height: 60px !important;
+  }
+  .crystal-1 { width: 40px; height: 60px; left: -15px; bottom: -20px; }
+  .crystal-2 { width: 50px; height: 70px; right: -10px; bottom: -25px; }
+  .crystal-4 { width: 45px; height: 65px; left: -20px; bottom: 8%; }
+  .crystal-5 { width: 42px; height: 58px; right: -15px; top: 12%; }
+  .crystal-spin { width: 35px; height: 50px; bottom: 15px; }
+
   table {
     font-size: 12px;
     width: 90%;
@@ -264,6 +566,23 @@ header {
     height: 70px !important;
     font-size: 14px;
   }
+  .game-title {
+    font-size: 12px;
+    top: -35px;
+    letter-spacing: 1px;
+  }
+  
+  /* Кристаллы на очень маленьких экранах */
+  .crystal {
+    width: 30px !important;
+    height: 45px !important;
+  }
+  .crystal-1 { width: 30px; height: 45px; }
+  .crystal-2 { width: 38px; height: 55px; }
+  .crystal-4 { width: 35px; height: 50px; }
+  .crystal-5 { width: 32px; height: 45px; }
+  .crystal-spin { width: 28px; height: 40px; }
+  
   .line {
     font-size: 10px;
   }
@@ -365,6 +684,19 @@ header {
   header {
     padding: 8px 10px;
   }
+  
+  .game-title {
+    font-size: 11px;
+    top: -30px;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Кристаллы на очень маленьких экранах (второй медиа-запрос) */
+  .crystal {
+    width: 25px !important;
+    height: 38px !important;
+  }
+  .crystal-spin { width: 25px; height: 35px; }
 }
 .slot-video {
   width: 100%;
@@ -393,16 +725,47 @@ header {
 
 /* подсветка выигрышных клеток (усиленная) */
 .column div.bg {
-  animation: bgPulse 1.4s ease-in-out;
+  animation: winLineAppear 0.5s ease-out, winLineBlink 1s ease-in-out infinite 0.5s;
   box-shadow: 0 0 18px rgba(109,243,255,0.25), 0 0 36px rgba(201,0,255,0.18);
   transform: scale(1.02);
   z-index: 5;
+  border: 2px solid rgba(201, 0, 255, 0.8);
 }
 
-@keyframes bgPulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.06); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
+/* Анимация появления выигрышной линии */
+@keyframes winLineAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    box-shadow: 0 0 0px rgba(201,0,255,0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.02);
+    box-shadow: 0 0 18px rgba(109,243,255,0.25), 0 0 36px rgba(201,0,255,0.18);
+  }
+}
+
+/* Анимация мигания сиреневым неоном */
+@keyframes winLineBlink {
+  0%, 100% {
+    background: linear-gradient(135deg, rgba(201, 0, 255, 0.4), rgba(255, 115, 250, 0.4));
+    box-shadow: 
+      0 0 20px rgba(201, 0, 255, 0.6),
+      0 0 40px rgba(201, 0, 255, 0.4),
+      0 0 60px rgba(255, 115, 250, 0.3),
+      inset 0 0 20px rgba(201, 0, 255, 0.2);
+    border-color: rgba(201, 0, 255, 0.8);
+  }
+  50% {
+    background: linear-gradient(135deg, rgba(201, 0, 255, 0.8), rgba(255, 115, 250, 0.8));
+    box-shadow: 
+      0 0 30px rgba(201, 0, 255, 1),
+      0 0 60px rgba(201, 0, 255, 0.8),
+      0 0 90px rgba(255, 115, 250, 0.6),
+      inset 0 0 30px rgba(201, 0, 255, 0.4);
+    border-color: rgba(255, 115, 250, 1);
+  }
 }
 
 /* конфетти */
@@ -472,4 +835,53 @@ header {
 */
 .slot-thumb, .slot-video {
   transform: translateZ(0); 
+}
+
+/* * 4. Дополнительные фиксы для мобильных устройств - предотвращение исчезновения элементов
+* Гарантируем, что элементы остаются видимыми во время анимации
+*/
+@media (max-width: 768px) {
+  /* На мобильных разрешаем overflow для колонок, чтобы элементы не обрезались */
+  .c-column {
+    overflow: visible !important;
+  }
+  
+  .column {
+    /* Принудительно используем GPU для анимации */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
+    /* Предотвращаем оптимизацию браузера, которая может скрывать элементы */
+    opacity: 1 !important;
+    visibility: visible !important;
+    /* НЕ используем contain на мобильных, чтобы элементы не обрезались */
+    /* contain: layout style paint; */
+    /* Плавный переход при завершении анимации */
+    transition-timing-function: ease-out;
+    /* Предотвращаем резкие скачки при завершении анимации */
+    will-change: transform;
+    overflow: visible !important;
+  }
+  
+  .slot-item {
+    /* Гарантируем видимость элементов на мобильных */
+    opacity: 1 !important;
+    visibility: visible !important;
+    /* Предотвращаем исчезновение во время анимации */
+    will-change: transform, opacity;
+    /* Гарантируем, что элементы остаются видимыми до конца анимации */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  /* Дополнительные фиксы для кристаллов на мобильных */
+  .crystal img {
+    /* Гарантируем, что белый фон не отображается */
+    background: transparent !important;
+    /* Улучшаем обработку прозрачности на мобильных */
+    -webkit-background-clip: padding-box;
+    background-clip: padding-box;
+  }
 }

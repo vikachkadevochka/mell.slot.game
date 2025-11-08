@@ -1,4 +1,4 @@
- // script.js — фикс для мобильной подгрузки (точечные изменения, сохраняют логику)
+// script.js — фикс для мобильной подгрузки (точечные изменения, сохраняют логику)
 
 const txtbet = document.querySelector('#bet');
 const elwin = document.querySelector('#el-win');
@@ -22,6 +22,105 @@ function updateMoney(value){
 let userInteracted = false;
 function setUserInteracted(){ userInteracted = true; }
 document.addEventListener('click', setUserInteracted, {once: true, passive:true});
+
+// Функция для удаления белого фона из кристаллов (улучшенная версия)
+function removeWhiteBackground(img) {
+  return new Promise((resolve, reject) => {
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Используем реальные размеры изображения
+      const width = img.naturalWidth || img.width || img.clientWidth;
+      const height = img.naturalHeight || img.height || img.clientHeight;
+      
+      if (width === 0 || height === 0) {
+        reject(new Error('Invalid image dimensions'));
+        return;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Рисуем изображение на canvas
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      // МАКСИМАЛЬНО АГРЕССИВНЫЙ алгоритм удаления белого фона
+      // Используем очень низкие пороги для удаления всех светлых пикселей
+      const threshold = 120; // Очень низкий порог - удаляем все светлые пиксели
+      const thresholdBrightness = 150; // Низкий порог яркости
+      const thresholdSaturation = 60; // Высокий порог насыщенности - белый имеет низкую насыщенность
+      
+      // Дополнительная проверка: если все каналы очень близки друг к другу и светлые - это белый
+      const whiteTolerance = 60; // Большая допустимая разница между каналами для белого
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+        
+        // Пропускаем уже прозрачные пиксели
+        if (a === 0) continue;
+        
+        // Вычисляем яркость пикселя
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        
+        // Вычисляем насыщенность (чем ближе к белому, тем ниже насыщенность)
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const saturation = max === 0 ? 0 : ((max - min) / max) * 100;
+        
+        // Проверяем, близки ли каналы друг к другу (признак белого/серого)
+        const channelDiff = Math.max(r, g, b) - Math.min(r, g, b);
+        
+        // Множественные проверки для определения белого пикселя
+        // Удаляем пиксель, если он соответствует ЛЮБОМУ из условий:
+        const isWhite = 
+          // 1. Все каналы выше порога (светлый пиксель)
+          (r > threshold && g > threshold && b > threshold) ||
+          // 2. Высокая яркость и низкая насыщенность (белый/серый)
+          (brightness > thresholdBrightness && saturation < thresholdSaturation) ||
+          // 3. Каналы близки друг к другу и пиксель светлый (белый/серый)
+          (channelDiff < whiteTolerance && brightness > thresholdBrightness) ||
+          // 4. Очень высокая яркость независимо от других параметров
+          (brightness > 180) ||
+          // 5. Средняя яркость, но очень низкая насыщенность (почти белый)
+          (brightness > 130 && saturation < 30) ||
+          // 6. Любой пиксель, где все каналы выше 100 и близки друг к другу
+          (r > 100 && g > 100 && b > 100 && channelDiff < 40);
+        
+        if (isWhite) {
+          data[i + 3] = 0; // Устанавливаем альфа-канал в 0 (прозрачный)
+        }
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      const newImg = new Image();
+      newImg.onload = () => resolve(newImg);
+      newImg.onerror = () => reject(new Error('Failed to create processed image'));
+      newImg.src = canvas.toDataURL('image/png');
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      // Изображение уже загружено
+      processImage();
+    } else {
+      // Ждем загрузки изображения
+      img.addEventListener('load', processImage, { once: true });
+      // Также обрабатываем, если изображение уже загружено, но событие не сработало
+      if (img.complete) {
+        processImage();
+      }
+    }
+  });
+});
 
 // стартовый флаг игры (чтобы startGame вызывался один раз)
 let gameStarted = false;
@@ -330,11 +429,22 @@ function startGame(){
 }
 
 
- function Spin(){
+  function Spin(){
   if(!checkMoney()) return;
   audioSpin.play().catch(()=>{});
   userInteracted = true;
   if(!videosWarmed) warmupPreloadAllVideos();
+
+  // Очищаем предыдущие выигрышные элементы
+  document.querySelectorAll('.slot-item.bg').forEach(item => {
+    item.classList.remove('bg');
+  });
+  document.querySelectorAll('.line.win-line').forEach(line => {
+    line.classList.remove('win-line');
+  });
+  // Удаляем горизонтальную линию
+  const winLine = document.querySelector('.win-line-horizontal');
+  if(winLine) winLine.remove();
 
   updateMoney(money - bet);
   showMoney();
@@ -344,86 +454,141 @@ function startGame(){
 
   let tr = 1;
   let endedCount = 0;
-  let fallbackTimer = null;
+  const transitionEndHandlers = [];
   
-  const transitionEndHandler = (e) => {
+  // Функция для проверки завершения всех анимаций
+  const checkEnd = (e) => {
     // Проверяем, что событие относится к свойству bottom
-    if(e.propertyName === 'bottom' || !e.propertyName){
-      endedCount++; 
-      if(endedCount === cols.length) {
-        // Удаляем все обработчики перед вызовом onAllColumnsEnd
-        for(const c of cols){
-          c.removeEventListener('transitionend', transitionEndHandler);
-        }
-        if(fallbackTimer) clearTimeout(fallbackTimer);
-        onAllColumnsEnd(); 
-      }
+    if (e.propertyName && e.propertyName !== 'bottom' && e.propertyName !== 'transform') {
+      return; // Игнорируем другие свойства
+    }
+    
+    endedCount++; 
+    if(endedCount === cols.length) {
+      // Удаляем все обработчики перед вызовом onAllColumnsEnd
+      transitionEndHandlers.forEach(({element, handler}) => {
+        element.removeEventListener('transitionend', handler);
+      });
+      transitionEndHandlers.length = 0;
+      onAllColumnsEnd(); 
     }
   };
 
   const onAllColumnsEnd = () => {
-    // Используем requestAnimationFrame для синхронизации с рендерингом браузера
-    // Это особенно важно на мобильных устройствах
-    requestAnimationFrame(() => {
-      // Удаляем лишние элементы всех колонок одновременно
-      for(const c of cols){
-        const ditm = c.querySelectorAll('.slot-item');
-        for(let i = ditm.length-1; i >= 3; i--){
-          ditm[i].remove();
-        }
-      }
-      
-      // Используем двойной requestAnimationFrame для гарантии отрисовки
-      // перед сбросом transition на мобильных устройствах
-      requestAnimationFrame(() => {
+    // Определяем, мобильное ли устройство
+    const isMobile = window.innerWidth <= 768;
+    
+    // Используем больше requestAnimationFrame для мобильных устройств
+    const rafCount = isMobile ? 4 : 3;
+    
+    let rafCounter = 0;
+    function doRaf() {
+      rafCounter++;
+      if (rafCounter < rafCount) {
+        requestAnimationFrame(doRaf);
+      } else {
+        // Удаляем лишние элементы всех колонок одновременно
+        // БЕЗ дополнительных переходов - просто останавливаем и удаляем
         for(const c of cols){
-          // Сначала убираем transition, но не меняем bottom сразу
-          c.style.transition = 'none';
-          // Принудительно вызываем reflow для применения изменений
-          void c.offsetHeight;
-          // Теперь безопасно устанавливаем финальную позицию
+          // СРАЗУ отключаем transition, чтобы не было прокрутки вверх
+          c.style.transition = '0s';
+          
+          // Удаляем лишние элементы
+          const items = c.querySelectorAll('.slot-item');
+          for(let i = items.length-1; i >= 3; i--){
+            items[i].remove();
+          }
+          
+          // Устанавливаем точную позицию БЕЗ анимации
           c.style.bottom = '0px';
+          
+          // Принудительно обновляем отрисовку
+          void c.offsetHeight;
         }
         
-        // Запускаем видео на центральной линии
-        playCenterVideosWithSound();
-        checkWin();
-      });
-    });
+        // Все колонки обработаны, можно запускать видео
+        // Дополнительная задержка для мобильных перед запуском видео
+        const delay = isMobile ? 100 : 50;
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            // запускаем видео на центральной линии
+            playCenterVideosWithSound();
+            checkWin();
+          });
+        }, delay);
+      }
+    }
+    
+    requestAnimationFrame(doRaf);
   };
 
-  // Добавляем fallback таймер на случай, если transitionend не сработает
-  const maxTime = Math.max(...Array.from({length: cols.length}, (_, i) => (1 + i * 0.5) * 1000)) + 500;
-  fallbackTimer = setTimeout(() => {
-    if(endedCount < cols.length){
-      // Удаляем все обработчики
-      for(const c of cols){
-        c.removeEventListener('transitionend', transitionEndHandler);
-      }
-      endedCount = cols.length;
-      onAllColumnsEnd();
-    }
-  }, maxTime);
-
+  // Запускаем анимацию для каждой колонки
   for(const c of cols){
+    // Сохраняем текущую позицию
+    const currentBottom = parseFloat(c.style.bottom) || 0;
+    
+    // Устанавливаем transition для анимации
     c.style.transition = `${tr}s ease-out`;
+    
     const n = c.querySelectorAll('.slot-item').length;
-    // Получаем реальную высоту первого элемента для корректного расчета на мобильных
+    // Получаем реальную высоту элемента (может быть разной на мобильных)
     const firstItem = c.querySelector('.slot-item');
     const itemHeight = firstItem ? firstItem.offsetHeight : 160;
     const b = (n - 3) * itemHeight;
-    c.style.bottom = `-${b}px`;
+    const targetBottom = -b;
+    
+    // Создаем обработчик для этой колонки
+    const handler = (e) => checkEnd(e);
+    c.addEventListener('transitionend', handler, { once: true });
+    transitionEndHandlers.push({ element: c, handler });
+    
+    // Запускаем анимацию
+    c.style.bottom = `${targetBottom}px`;
+    
     tr += 0.5;
-
-    // Используем addEventListener вместо ontransitionend для большей надежности
-    c.addEventListener('transitionend', transitionEndHandler, {once: false});
   }
 }
 
   btnspin.addEventListener('click', Spin, false);
 
+  // Функция для создания/удаления горизонтальной выигрышной линии
+  function createWinLine(row) {
+    // Удаляем предыдущую линию, если есть
+    const existingLine = document.querySelector('.win-line-horizontal');
+    if(existingLine) existingLine.remove();
+    
+    // Вычисляем позицию линии на основе ряда
+    const firstItem = cols[0].querySelectorAll('.slot-item')[row];
+    if(!firstItem) return;
+    
+    // Получаем позицию относительно game-area
+    const gameAreaRect = elgame.getBoundingClientRect();
+    const itemRect = firstItem.getBoundingClientRect();
+    const itemHeight = firstItem.offsetHeight;
+    
+    // Вычисляем позицию линии (центр элемента относительно game-area)
+    const lineTop = (itemRect.top - gameAreaRect.top) + (itemHeight / 2);
+    
+    // Создаем горизонтальную линию
+    const winLine = document.createElement('div');
+    winLine.className = 'win-line-horizontal';
+    winLine.style.top = lineTop + 'px';
+    elgame.appendChild(winLine);
+  }
+  
+  function removeWinLine() {
+    const existingLine = document.querySelector('.win-line-horizontal');
+    if(existingLine) existingLine.remove();
+  }
+
   // checkWin оставляем почти без изменений, только updateMoney при выигрыше
   function checkWin(){
+    // Очищаем предыдущие выигрышные линии
+    document.querySelectorAll('.line.win-line').forEach(line => {
+      line.classList.remove('win-line');
+    });
+    removeWinLine();
+    
     const arrLine1 = [], arrLine2 = [], arrLine3 = [];
     for(const c of cols){
       const d = c.querySelectorAll('.slot-item');
@@ -467,10 +632,17 @@ function startGame(){
     const arrC2 = copiesArr(arrLine2, 3);
     const arrC3 = copiesArr(arrLine3, 3);
 
+    let winRow = -1; // Для определения, какая линия выиграла
+    
     if(arrC1.length){
       stopspin = true;
       const cnt = getCountCopies(arrC1);
       setBG(arrC1,0);
+      winRow = 0;
+      // Добавляем класс выигрышной линии
+      document.querySelectorAll('.line-1').forEach(line => {
+        line.classList.add('win-line');
+      });
       if(cnt==3) resL1 = 2*bet;
       if(cnt==4) resL1 = 5*bet;
       if(cnt==5) resL1 = 10*bet;
@@ -479,6 +651,11 @@ function startGame(){
       stopspin = true;
       const cnt = getCountCopies(arrC2);
       setBG(arrC2,1);
+      winRow = 1;
+      // Добавляем класс выигрышной линии
+      document.querySelectorAll('.line-2').forEach(line => {
+        line.classList.add('win-line');
+      });
       if(cnt==3) resL2 = 100*bet;
       if(cnt==4) resL2 = 1000*bet;
       if(cnt==5) resL2 = 100000*bet;
@@ -487,9 +664,22 @@ function startGame(){
       stopspin = true;
       const cnt = getCountCopies(arrC3);
       setBG(arrC3,2);
+      winRow = 2;
+      // Добавляем класс выигрышной линии
+      document.querySelectorAll('.line-3').forEach(line => {
+        line.classList.add('win-line');
+      });
       if(cnt==3) resL3 = 2*bet;
       if(cnt==4) resL3 = 5*bet;
       if(cnt==5) resL3 = 10*bet;
+    }
+    
+    // Создаем горизонтальную линию, если есть выигрыш
+    if(winRow >= 0) {
+      // Небольшая задержка для плавного появления после остановки
+      setTimeout(() => {
+        createWinLine(winRow);
+      }, 100);
     }
 
     if(stopspin){
