@@ -23,105 +23,6 @@ let userInteracted = false;
 function setUserInteracted(){ userInteracted = true; }
 document.addEventListener('click', setUserInteracted, {once: true, passive:true});
 
-// Функция для удаления белого фона из кристаллов (улучшенная версия)
-function removeWhiteBackground(img) {
-  return new Promise((resolve, reject) => {
-    try {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Используем реальные размеры изображения
-      const width = img.naturalWidth || img.width || img.clientWidth;
-      const height = img.naturalHeight || img.height || img.clientHeight;
-      
-      if (width === 0 || height === 0) {
-        reject(new Error('Invalid image dimensions'));
-        return;
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      // Рисуем изображение на canvas
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      
-      // МАКСИМАЛЬНО АГРЕССИВНЫЙ алгоритм удаления белого фона
-      // Используем очень низкие пороги для удаления всех светлых пикселей
-      const threshold = 120; // Очень низкий порог - удаляем все светлые пиксели
-      const thresholdBrightness = 150; // Низкий порог яркости
-      const thresholdSaturation = 60; // Высокий порог насыщенности - белый имеет низкую насыщенность
-      
-      // Дополнительная проверка: если все каналы очень близки друг к другу и светлые - это белый
-      const whiteTolerance = 60; // Большая допустимая разница между каналами для белого
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-        
-        // Пропускаем уже прозрачные пиксели
-        if (a === 0) continue;
-        
-        // Вычисляем яркость пикселя
-        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        
-        // Вычисляем насыщенность (чем ближе к белому, тем ниже насыщенность)
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        const saturation = max === 0 ? 0 : ((max - min) / max) * 100;
-        
-        // Проверяем, близки ли каналы друг к другу (признак белого/серого)
-        const channelDiff = Math.max(r, g, b) - Math.min(r, g, b);
-        
-        // Множественные проверки для определения белого пикселя
-        // Удаляем пиксель, если он соответствует ЛЮБОМУ из условий:
-        const isWhite = 
-          // 1. Все каналы выше порога (светлый пиксель)
-          (r > threshold && g > threshold && b > threshold) ||
-          // 2. Высокая яркость и низкая насыщенность (белый/серый)
-          (brightness > thresholdBrightness && saturation < thresholdSaturation) ||
-          // 3. Каналы близки друг к другу и пиксель светлый (белый/серый)
-          (channelDiff < whiteTolerance && brightness > thresholdBrightness) ||
-          // 4. Очень высокая яркость независимо от других параметров
-          (brightness > 180) ||
-          // 5. Средняя яркость, но очень низкая насыщенность (почти белый)
-          (brightness > 130 && saturation < 30) ||
-          // 6. Любой пиксель, где все каналы выше 100 и близки друг к другу
-          (r > 100 && g > 100 && b > 100 && channelDiff < 40);
-        
-        if (isWhite) {
-          data[i + 3] = 0; // Устанавливаем альфа-канал в 0 (прозрачный)
-        }
-      }
-      
-      ctx.putImageData(imageData, 0, 0);
-      const newImg = new Image();
-      newImg.onload = () => resolve(newImg);
-      newImg.onerror = () => reject(new Error('Failed to create processed image'));
-      newImg.src = canvas.toDataURL('image/png');
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-      // Изображение уже загружено
-      processImage();
-    } else {
-      // Ждем загрузки изображения
-      img.addEventListener('load', processImage, { once: true });
-      // Также обрабатываем, если изображение уже загружено, но событие не сработало
-      if (img.complete) {
-        processImage();
-      }
-    }
-  });
-});
-
 // стартовый флаг игры (чтобы startGame вызывался один раз)
 let gameStarted = false;
 
@@ -694,4 +595,4 @@ function startGame(){
 } // end startGame
 
 // если уже есть баланс на старте — можно автоматически запустить игру (опционально)
-// if(money > 0 && !gameStarted){ gameStarted = true; startGame(); }  
+// if(money > 0 && !gameStarted){ gameStarted = true; startGame(); } 
