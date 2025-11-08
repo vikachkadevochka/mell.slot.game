@@ -451,7 +451,11 @@ header {
 */
 .column {
   will-change: transform;
-  transform: translateZ(0); 
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
 }
 
 /* * 2. Применяем аппаратное ускорение к каждому слоту.
@@ -460,6 +464,8 @@ header {
 .slot-item {
   will-change: transform, opacity;
   transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* * 3. Убедимся, что все дочерние элементы слота также участвуют в ускоренной отрисовке.

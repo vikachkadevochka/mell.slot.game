@@ -343,36 +343,80 @@ function startGame(){
   getColumns();
 
   let tr = 1;
-  const onAllColumnsEnd = () => {
-    // удаляем лишние элементы всех колонок одновременно
-    for(const c of cols){
-      const ditm = c.querySelectorAll('.slot-item');
-      for(let i = ditm.length-1; i >= 3; i--){
-        ditm[i].remove();
+  let endedCount = 0;
+  let fallbackTimer = null;
+  
+  const transitionEndHandler = (e) => {
+    // Проверяем, что событие относится к свойству bottom
+    if(e.propertyName === 'bottom' || !e.propertyName){
+      endedCount++; 
+      if(endedCount === cols.length) {
+        // Удаляем все обработчики перед вызовом onAllColumnsEnd
+        for(const c of cols){
+          c.removeEventListener('transitionend', transitionEndHandler);
+        }
+        if(fallbackTimer) clearTimeout(fallbackTimer);
+        onAllColumnsEnd(); 
       }
-      c.style.transition = '0s';
-      c.style.bottom = '0px';
     }
-    // запускаем видео на центральной линии
-    playCenterVideosWithSound();
-    checkWin();
   };
 
-  let endedCount = 0;
-  const checkEnd = () => { 
-    endedCount++; 
-    if(endedCount === cols.length) onAllColumnsEnd(); 
+  const onAllColumnsEnd = () => {
+    // Используем requestAnimationFrame для синхронизации с рендерингом браузера
+    // Это особенно важно на мобильных устройствах
+    requestAnimationFrame(() => {
+      // Удаляем лишние элементы всех колонок одновременно
+      for(const c of cols){
+        const ditm = c.querySelectorAll('.slot-item');
+        for(let i = ditm.length-1; i >= 3; i--){
+          ditm[i].remove();
+        }
+      }
+      
+      // Используем двойной requestAnimationFrame для гарантии отрисовки
+      // перед сбросом transition на мобильных устройствах
+      requestAnimationFrame(() => {
+        for(const c of cols){
+          // Сначала убираем transition, но не меняем bottom сразу
+          c.style.transition = 'none';
+          // Принудительно вызываем reflow для применения изменений
+          void c.offsetHeight;
+          // Теперь безопасно устанавливаем финальную позицию
+          c.style.bottom = '0px';
+        }
+        
+        // Запускаем видео на центральной линии
+        playCenterVideosWithSound();
+        checkWin();
+      });
+    });
   };
+
+  // Добавляем fallback таймер на случай, если transitionend не сработает
+  const maxTime = Math.max(...Array.from({length: cols.length}, (_, i) => (1 + i * 0.5) * 1000)) + 500;
+  fallbackTimer = setTimeout(() => {
+    if(endedCount < cols.length){
+      // Удаляем все обработчики
+      for(const c of cols){
+        c.removeEventListener('transitionend', transitionEndHandler);
+      }
+      endedCount = cols.length;
+      onAllColumnsEnd();
+    }
+  }, maxTime);
 
   for(const c of cols){
     c.style.transition = `${tr}s ease-out`;
     const n = c.querySelectorAll('.slot-item').length;
-    const b = (n - 3) * 160;
+    // Получаем реальную высоту первого элемента для корректного расчета на мобильных
+    const firstItem = c.querySelector('.slot-item');
+    const itemHeight = firstItem ? firstItem.offsetHeight : 160;
+    const b = (n - 3) * itemHeight;
     c.style.bottom = `-${b}px`;
     tr += 0.5;
 
-    // слушаем transitionend каждой колонки
-    c.ontransitionend = checkEnd;
+    // Используем addEventListener вместо ontransitionend для большей надежности
+    c.addEventListener('transitionend', transitionEndHandler, {once: false});
   }
 }
 
