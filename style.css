@@ -1,0 +1,441 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --bg-main: #12002f;
+  --accent1: #c900ff;
+  --accent2: #ff73fa;
+  --accent3: #6df3ff;
+  --text-light: #ffffff;
+  --glow: 0 0 25px var(--accent1), 0 0 40px var(--accent2);
+}
+
+*{margin: 0; padding: 0; box-sizing: border-box; font-family: "Press Start 2P", sans-serif; font-size: 100%; font-weight: normal; font-style: normal;}
+body{position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: silver;}
+header, main{float: left; width: 100%;}
+
+header{height: 60px; border-bottom: 4px groove silver;}
+header span{line-height: 60px; font-size: 24px; color: #1c1c1c; margin-left: 30px;}
+/* === Заменить текущий #btn-putmoney === */
+#btn-putmoney{
+  float: right;
+  margin-right: 20px;          /* чуть меньше отступ справа */
+  background-color: transparent;
+  border: 3px solid rgba(255,255,255,0.12); /* тоньше рамка, чтобы визуально меньше */
+  cursor: pointer;
+  font-size: 14px;            /* чуть меньше шрифт */
+  border-radius: 10px;        /* аккуратные скругления */
+  height: 36px;               /* чуть меньше высота */
+  width: 150px;               /* чуть уже, чтобы «встала внутрь» */
+  margin-top: 12px;           /* скорректировать вертикальное положение */
+  color: var(--text-light);   /* вписывается в вашу тему */
+  padding: 0;                 /* гарантирует точную подгонку */
+  box-shadow: 0 0 12px rgba(201,0,255,0.18); /* лёгкое неоновое свечение */
+}
+#btn-putmoney:active{border: 4px inset silver;} 
+main{height: calc(100% - 60px);}
+section{float: left; height: 100%;}
+.s-game{width: 70%;}
+.s-btns{width: 30%; border-left: 4px groove silver;}
+.s-game{display: flex; justify-content: center; align-items: center;}
+/* === Заменить текущий .c-game (рамка слота) === */
+.c-game{
+  position: relative;
+  width: auto;
+  height: auto;
+  box-sizing: content-box;
+
+  /* оставляем похожую толщину бордюра, но делаем не серую, а градиентную неоновую */
+  border-width: 20px;
+  border-style: solid;
+  /* градиент по всему бордеру (фиолет → розовато → бирюзово для неон-эффекта) */
+  border-image: linear-gradient(135deg, var(--accent1) 0%, var(--accent2) 60%, var(--accent3) 100%) 1;
+
+  border-radius: 18px; /* закруглённые углы */
+  background-clip: padding-box; /* чтобы внутренность не заслонялась бордюром */
+
+  /* неоновое свечение + немного внутреннего свечения для глубины */
+  box-shadow:
+    0 0 40px rgba(201,0,255,0.35),      /* внешний фиолетовый glow */
+    0 0 80px rgba(255,115,250,0.12),    /* мягкое вторичное свечение */
+    inset 0 0 40px rgba(109,243,255,0.04); /* лёгкий внутренний glow */
+}
+.line{position: absolute; font-weight: bold; font-size: 14px;}
+.line-1{color: rgb(255, 0, 0); top: 50%; transform: translateY(-50%);}
+.line-2{color: rgb(255, 255, 255); top: 15%;}
+.line-3{color: rgb(225, 0, 255); bottom: 15%;}
+.line.left{left: -18px;}
+.line.right{right: -18px;}
+#game-area{width: 800px; height: 480px; background-color: #fff; overflow: hidden;  box-shadow: inset 0px 0px 85px -12px rgba(0,0,0,0.55);}
+.c-column{position: relative; float: left; min-height: 100%; width: 20%;border-left: 1px solid #1c1c1c;}
+.c-column:last-child{border-right: 1px solid #1c1c1c;}
+.column{position: absolute; left: 0; bottom: 0; width: 100%; height: auto;}
+.column:nth-child(1){transition: 1s;}
+.column:nth-child(2){transition: 2s;}
+.column:nth-child(3){transition: 3s;}
+.column:nth-child(4){transition: 4s;}
+.column:nth-child(5){transition: 5s;}
+.column div{position: relative; width: 100%; height: 160px; border: 4px solid #c0c0c0;}
+.bg{background-color: #a2f4a4;}
+.column div i{position: absolute; left: 50%; top: 50%; transform: translateX(-50%) translateY(-50%); font-size: 80px;}
+.c-btn{float: left; width: 100%; display: flex; justify-content: center; padding-top: 30px;}
+.c-btn button{font-size: 24px; color: #1c1c1c; background-color: transparent; border: 4px outset silver; border-radius: 50%; cursor: pointer;}
+#btn-bet{width: 80px; height: 80px;}
+#btn-spin{width: 120px; height: 120px;}
+.c-btn button:active{border: 4px inset silver;}
+.col-red{color: red;}
+table{border-collapse: collapse; font-size: 14px;}
+td{border: 1px dotted #1c1c1c; padding: 3px 5px;}
+/* video in slot */
+.column div { position: relative; width: 100%; height: 160px; border: 4px solid #c0c0c0; overflow: hidden; }
+.slot-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: #000;
+    pointer-events: none; /* чтобы клики не мешали */
+}
+body {
+  background-color: var(--bg-main);
+  color: var(--text-light);
+}
+
+header {
+  border-bottom: none;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  color: var(--text-light);
+  box-shadow: 0 0 20px var(--accent1);
+}
+
+#game-area {
+  background: radial-gradient(circle at center, #2d005f 0%, #12002f 80%);
+  box-shadow: inset 0 0 60px var(--accent3);
+  border-radius: 16px;
+}
+
+.c-btn button {
+  color: var(--text-light);
+  background: radial-gradient(circle at center, var(--accent2), var(--accent1));
+  box-shadow: var(--glow);
+  border: none;
+  transition: 0.2s;
+}
+.c-btn button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px var(--accent3), 0 0 50px var(--accent1);
+}
+.c-btn button:active {
+  transform: scale(0.95);
+}
+
+.bg {
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  box-shadow: 0 0 5px var(--accent3);
+}
+.line {
+  text-shadow: var(--glow);
+}
+#el-money, #el-win {
+  text-shadow: 0 0 10px var(--accent3), 0 0 20px var(--accent2);
+}
+@keyframes neonPulse {
+  0%, 100% { filter: drop-shadow(0 0 5px var(--accent1)); }
+  50% { filter: drop-shadow(0 0 5px var(--accent3)); }
+}
+
+.c-btn button {
+  animation: neonPulse 2s infinite;
+}
+/* ============================= */
+/* 📱 Адаптация для мобильных устройств */
+/* ============================= */
+
+/* Малые планшеты и телефоны — ширина < 1024px */
+@media (max-width: 1024px) {
+  header span {
+    font-size: 18px;
+    margin-left: 15px;
+  }
+  #btn-putmoney {
+    width: 140px;
+    height: 34px;
+    font-size: 13px;
+    margin-right: 15px;
+  }
+  #game-area {
+    width: 95%;
+    height: auto;
+    aspect-ratio: 16 / 9; /* чтобы сохранять пропорции */
+  }
+  .c-game {
+    border-width: 14px;
+    border-radius: 14px;
+  }
+  .c-btn button {
+    transform: scale(0.9);
+  }
+}
+
+/* Телефоны — ширина < 768px */
+@media (max-width: 768px) {
+  body {
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    height: auto;
+    padding: 10px;
+    text-align: center;
+  }
+  header span {
+    flex: 1 1 100%;
+    text-align: center;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 5px 0;
+  }
+  #btn-putmoney {
+    flex: 1 1 100%;
+    margin: 8px auto;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .s-game {
+    width: 100%;
+    order: 1;
+  }
+  .s-btns {
+    width: 100%;
+    border-left: none;
+    border-top: 3px groove silver;
+    order: 2;
+  }
+
+  .c-btn {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .c-btn button {
+    width: 90px !important;
+    height: 90px !important;
+    font-size: 18px;
+  }
+
+  #game-area {
+    width: 90vw;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  .column div {
+    height: 120px; /* меньше высота, чтобы влезали символы */
+  }
+
+  table {
+    font-size: 12px;
+    width: 90%;
+  }
+}
+
+/* Очень маленькие экраны (<480px) */
+@media (max-width: 480px) {
+  header span {
+    font-size: 14px;
+  }
+  #btn-putmoney {
+    width: 130px;
+    height: 32px;
+    font-size: 12px;
+  }
+  .c-btn button {
+    width: 70px !important;
+    height: 70px !important;
+    font-size: 14px;
+  }
+  .line {
+    font-size: 10px;
+  }
+  table td {
+    padding: 2px 3px;
+  }
+}
+/* ============================= */
+/* 🎬 Адаптация видео для мобильных экранов */
+/* ============================= */
+.slot-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px; /* немного скруглим, чтобы совпадало с рамкой слота */
+  background-color: #000;
+}
+
+@media (max-width: 768px) {
+  .slot-video {
+    object-fit: contain;  /* чтобы на телефонах видео не обрезались */
+    background-color: #000; /* чёрный фон, если будут полосы */
+  }
+}
+/* ============================= */
+/* Мобильные правки: всегда 3 строки, центрировка и равномерное заполнение экрана */
+/* Добавь в конец style.css */
+/* ============================= */
+
+@media (max-width: 768px) {
+  /* 3 строки по 120px -> 360px + бордюры = адекватная высота слота */
+  #game-area {
+    width: 94vw;             /* почти вся ширина экрана */
+    max-width: 920px;        /* чтобы на планшетах не раздувало */
+    min-height: 360px;       /* гарантируем место под 3 ячейки */
+    height: auto;            /* не делаем фиксированную высоту, но не даём уменьшаться ниже min-height */
+    margin: 6px auto;        /* центр по горизонтали и небольшой отступ сверху/снизу */
+    box-sizing: border-box;
+  }
+
+  /* высота каждого "слота" (ячейки) — 120px; 3 * 120 = 360 */
+  .column div {
+    height: 120px !important;
+  }
+
+  /* немного уменьшить толщину рамки и скругления на мобилке, сохранить неон */
+  .c-game {
+    border-width: 14px;
+    border-radius: 14px;
+  }
+
+  /* центрируем основную часть вертикально и оставляем место для кнопок снизу */
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* вертикальное центрирование слота + кнопок */
+    gap: 14px;
+    min-height: calc(100vh - 80px); /* оставляет высоту под header (примерно) */
+    padding: 8px 8px 18px 8px;
+    box-sizing: border-box;
+  }
+
+  /* кнопки под слотом — растянуты, чтобы не было пустого пространства */
+  .s-btns {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding-top: 8px;
+    box-sizing: border-box;
+  }
+}
+
+/* Очень маленькие устройства — чуть поменьше ячейки, но всё равно 3 ряда */
+@media (max-width: 480px) {
+  #game-area {
+    width: 96vw;
+    min-height: 330px; /* 3 * 110 = 330 */
+  }
+
+  .column div {
+    height: 110px !important;
+  }
+
+  .c-game {
+    border-width: 12px;
+    border-radius: 12px;
+  }
+
+  /* подгоняем кнопки под маленькие экраны */
+  .c-btn button {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 16px;
+  }
+
+  header {
+    padding: 8px 10px;
+  }
+}
+.slot-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #000; /* резервный фон, если видео 1 кадр не успеет загрузиться */
+  transition: opacity 0.2s linear;
+  opacity: 1;
+}
+/* === Эффект выигрыша: подсветка рамки и конфетти === */
+.c-game.win-effect {
+  animation: winGlow 1.8s ease-in-out;
+  box-shadow:
+    0 0 60px rgba(201,0,255,0.45),
+    0 0 120px rgba(255,115,250,0.18),
+    inset 0 0 50px rgba(109,243,255,0.06);
+  transform-origin: center;
+}
+
+@keyframes winGlow {
+  0% { transform: scale(1); filter: saturate(1); }
+  25% { transform: scale(1.02); filter: saturate(1.2); }
+  60% { transform: scale(1.01); filter: saturate(1.1); }
+  100% { transform: scale(1); filter: saturate(1); }
+}
+
+/* подсветка выигрышных клеток (усиленная) */
+.column div.bg {
+  animation: bgPulse 1.4s ease-in-out;
+  box-shadow: 0 0 18px rgba(109,243,255,0.25), 0 0 36px rgba(201,0,255,0.18);
+  transform: scale(1.02);
+  z-index: 5;
+}
+
+@keyframes bgPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* конфетти */
+.confetti-container { position: absolute; left:0; top:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index: 9999; }
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: confettiFall 1.8s linear forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(420px) rotate(360deg) translateX(30px);
+    opacity: 0;
+  }
+}
+.slot-item, .slot-thumb, .slot-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #000;
+  transition: opacity 0.2s ease;
+}
