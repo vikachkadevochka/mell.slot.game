@@ -387,22 +387,11 @@ function startGame(){
 }
 
 
-  function Spin(){
+ function Spin(){
   if(!checkMoney()) return;
   audioSpin.play().catch(()=>{});
   userInteracted = true;
   if(!videosWarmed) warmupPreloadAllVideos();
-
-  // Очищаем предыдущие выигрышные элементы
-  document.querySelectorAll('.slot-item.bg').forEach(item => {
-    item.classList.remove('bg');
-  });
-  document.querySelectorAll('.line.win-line').forEach(line => {
-    line.classList.remove('win-line');
-  });
-  // Удаляем горизонтальную линию
-  const winLine = document.querySelector('.win-line-horizontal');
-  if(winLine) winLine.remove();
 
   updateMoney(money - bet);
   showMoney();
@@ -412,78 +401,86 @@ function startGame(){
 
   let tr = 1;
   let endedCount = 0;
-  const checkEnd = () => { 
-    endedCount++; 
-    if(endedCount === cols.length) onAllColumnsEnd(); 
+  let fallbackTimer = null;
+  
+  const transitionEndHandler = (e) => {
+    // Проверяем, что событие относится к свойству bottom
+    if(e.propertyName === 'bottom' || !e.propertyName){
+      endedCount++; 
+      if(endedCount === cols.length) {
+        // Удаляем все обработчики перед вызовом onAllColumnsEnd
+        for(const c of cols){
+          c.removeEventListener('transitionend', transitionEndHandler);
+        }
+        if(fallbackTimer) clearTimeout(fallbackTimer);
+        onAllColumnsEnd(); 
+      }
+    }
   };
 
   const onAllColumnsEnd = () => {
-    // удаляем лишние элементы всех колонок одновременно
-    for(const c of cols){
-      const ditm = c.querySelectorAll('.slot-item');
-      for(let i = ditm.length-1; i >= 3; i--){
-        ditm[i].remove();
+    // Используем requestAnimationFrame для синхронизации с рендерингом браузера
+    // Это особенно важно на мобильных устройствах
+    requestAnimationFrame(() => {
+      // Удаляем лишние элементы всех колонок одновременно
+      for(const c of cols){
+        const ditm = c.querySelectorAll('.slot-item');
+        for(let i = ditm.length-1; i >= 3; i--){
+          ditm[i].remove();
+        }
       }
-      c.style.transition = '0s';
-      c.style.bottom = '0px';
-    }
-    // запускаем видео на центральной линии
-    playCenterVideosWithSound();
-    checkWin();
+      
+      // Используем двойной requestAnimationFrame для гарантии отрисовки
+      // перед сбросом transition на мобильных устройствах
+      requestAnimationFrame(() => {
+        for(const c of cols){
+          // Сначала убираем transition, но не меняем bottom сразу
+          c.style.transition = 'none';
+          // Принудительно вызываем reflow для применения изменений
+          void c.offsetHeight;
+          // Теперь безопасно устанавливаем финальную позицию
+          c.style.bottom = '0px';
+        }
+        
+        // Запускаем видео на центральной линии
+        playCenterVideosWithSound();
+        checkWin();
+      });
+    });
   };
+
+  // Добавляем fallback таймер на случай, если transitionend не сработает
+  const maxTime = Math.max(...Array.from({length: cols.length}, (_, i) => (1 + i * 0.5) * 1000)) + 500;
+  fallbackTimer = setTimeout(() => {
+    if(endedCount < cols.length){
+      // Удаляем все обработчики
+      for(const c of cols){
+        c.removeEventListener('transitionend', transitionEndHandler);
+      }
+      endedCount = cols.length;
+      onAllColumnsEnd();
+    }
+  }, maxTime);
 
   for(const c of cols){
     c.style.transition = `${tr}s ease-out`;
     const n = c.querySelectorAll('.slot-item').length;
-    const b = (n - 3) * 160;
+    // Получаем реальную высоту первого элемента для корректного расчета на мобильных
+    const firstItem = c.querySelector('.slot-item');
+    const itemHeight = firstItem ? firstItem.offsetHeight : 160;
+    const b = (n - 3) * itemHeight;
     c.style.bottom = `-${b}px`;
     tr += 0.5;
 
-    // слушаем transitionend каждой колонки
-    c.ontransitionend = checkEnd;
+    // Используем addEventListener вместо ontransitionend для большей надежности
+    c.addEventListener('transitionend', transitionEndHandler, {once: false});
   }
 }
 
   btnspin.addEventListener('click', Spin, false);
 
-  // Функция для создания/удаления горизонтальной выигрышной линии
-  function createWinLine(row) {
-    // Удаляем предыдущую линию, если есть
-    const existingLine = document.querySelector('.win-line-horizontal');
-    if(existingLine) existingLine.remove();
-    
-    // Вычисляем позицию линии на основе ряда
-    const firstItem = cols[0].querySelectorAll('.slot-item')[row];
-    if(!firstItem) return;
-    
-    // Получаем позицию относительно game-area
-    const gameAreaRect = elgame.getBoundingClientRect();
-    const itemRect = firstItem.getBoundingClientRect();
-    const itemHeight = firstItem.offsetHeight;
-    
-    // Вычисляем позицию линии (центр элемента относительно game-area)
-    const lineTop = (itemRect.top - gameAreaRect.top) + (itemHeight / 2);
-    
-    // Создаем горизонтальную линию
-    const winLine = document.createElement('div');
-    winLine.className = 'win-line-horizontal';
-    winLine.style.top = lineTop + 'px';
-    elgame.appendChild(winLine);
-  }
-  
-  function removeWinLine() {
-    const existingLine = document.querySelector('.win-line-horizontal');
-    if(existingLine) existingLine.remove();
-  }
-
   // checkWin оставляем почти без изменений, только updateMoney при выигрыше
   function checkWin(){
-    // Очищаем предыдущие выигрышные линии
-    document.querySelectorAll('.line.win-line').forEach(line => {
-      line.classList.remove('win-line');
-    });
-    removeWinLine();
-    
     const arrLine1 = [], arrLine2 = [], arrLine3 = [];
     for(const c of cols){
       const d = c.querySelectorAll('.slot-item');
@@ -527,17 +524,10 @@ function startGame(){
     const arrC2 = copiesArr(arrLine2, 3);
     const arrC3 = copiesArr(arrLine3, 3);
 
-    let winRow = -1; // Для определения, какая линия выиграла
-    
     if(arrC1.length){
       stopspin = true;
       const cnt = getCountCopies(arrC1);
       setBG(arrC1,0);
-      winRow = 0;
-      // Добавляем класс выигрышной линии
-      document.querySelectorAll('.line-1').forEach(line => {
-        line.classList.add('win-line');
-      });
       if(cnt==3) resL1 = 2*bet;
       if(cnt==4) resL1 = 5*bet;
       if(cnt==5) resL1 = 10*bet;
@@ -546,11 +536,6 @@ function startGame(){
       stopspin = true;
       const cnt = getCountCopies(arrC2);
       setBG(arrC2,1);
-      winRow = 1;
-      // Добавляем класс выигрышной линии
-      document.querySelectorAll('.line-2').forEach(line => {
-        line.classList.add('win-line');
-      });
       if(cnt==3) resL2 = 100*bet;
       if(cnt==4) resL2 = 1000*bet;
       if(cnt==5) resL2 = 100000*bet;
@@ -559,22 +544,9 @@ function startGame(){
       stopspin = true;
       const cnt = getCountCopies(arrC3);
       setBG(arrC3,2);
-      winRow = 2;
-      // Добавляем класс выигрышной линии
-      document.querySelectorAll('.line-3').forEach(line => {
-        line.classList.add('win-line');
-      });
       if(cnt==3) resL3 = 2*bet;
       if(cnt==4) resL3 = 5*bet;
       if(cnt==5) resL3 = 10*bet;
-    }
-    
-    // Создаем горизонтальную линию, если есть выигрыш
-    if(winRow >= 0) {
-      // Небольшая задержка для плавного появления после остановки
-      setTimeout(() => {
-        createWinLine(winRow);
-      }, 100);
     }
 
     if(stopspin){
