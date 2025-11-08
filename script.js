@@ -1,4 +1,4 @@
-// script.js — фикс для мобильной подгрузки (точечные изменения, сохраняют логику)
+ // script.js — фикс для мобильной подгрузки (точечные изменения, сохраняют логику)
 
 const txtbet = document.querySelector('#bet');
 const elwin = document.querySelector('#el-win');
@@ -283,77 +283,99 @@ function startGame(){
   }
 
   // Плавная подмена видео в центральной линии
-  function playCenterVideosWithSound(){
-    for(const c of cols){
-      const items = c.querySelectorAll('.slot-item');
-      if(items.length > 1){
-        const el = items[1];
-        const i = Number(el.dataset.ind);
+ function playCenterVideosWithSound(){
+  for(const c of cols){
+    const items = c.querySelectorAll('.slot-item');
+    if(items.length > 1){
+      const el = items[1];
+      const i = Number(el.dataset.ind);
 
-        // начинаем замену (замена не трогает img до момента готовности)
-        replaceWithVideo(el, i).then((vid)=>{
-          if(!vid) return;
-          // пробуем play со звуком, иначе play в muted
-          vid.muted = false;
-          vid.currentTime = 0;
-          vid.play().then(()=> {
-            // если удалось — делаем fade-in: сначала показываем video и скрываем img
-            const img = el.querySelector('img.slot-thumb');
-            if(img) img.style.display = 'none';
-            vid.style.opacity = 1;
-          }).catch(()=> {
-            // если автоплей со звуком блокирован — play muted, оставляем звук выключенным
-            vid.muted = true;
-            vid.play().catch(()=>{});
-            const img = el.querySelector('img.slot-thumb');
-            if(img) img.style.display = 'none';
-            vid.style.opacity = 1;
-          });
-        });
-      }
-    }
-  }
+      // если уже есть видео для этого слота — не создаём новое
+      let vid = el.querySelector('video.slot-video');
+      if(!vid){
+        vid = document.createElement('video');
+        vid.className = 'slot-video';
+        vid.setAttribute('playsinline','');
+        vid.loop = true;
+        vid.preload = 'auto';
+        vid.poster = `media/thumbs/v${i}.jpg`;
+        vid.muted = true; // автоплей на мобиле
+        vid.style.position = 'absolute';
+        vid.style.top = '0';
+        vid.style.left = '0';
+        vid.style.width = '100%';
+        vid.style.height = '100%';
+        vid.style.objectFit = 'cover';
+        vid.style.zIndex = '1';
+        vid.style.opacity = '1';
 
-  function Spin(){
-    if(!checkMoney()) return;
-    audioSpin.play().catch(()=>{});
-    // фикс: помечаем взаимодействие и прогреваем видео при первом клике
-    userInteracted = true;
-    if(!videosWarmed) warmupPreloadAllVideos();
+        const s1 = document.createElement('source');
+        s1.src = `media/v${i}.webm`;
+        s1.type = 'video/webm';
+        const s2 = document.createElement('source');
+        s2.src = `media/v${i}.mp4`;
+        s2.type = 'video/mp4';
+        vid.appendChild(s1);
+        vid.appendChild(s2);
 
-    updateMoney(money - bet); // списываем ставку
-    showMoney();
-    disableBtns();
-    pauseAllVideos();
-    getColumns();
-
-    // запускаем анимацию колонок
-    let tr = 1;
-    for(const c of cols){
-      c.style.transition = `${tr}s ease-out`;
-      const n = c.querySelectorAll('.slot-item').length;
-      const b = (n - 3) * 160;
-      c.style.bottom = `-${b}px`;
-      tr += 0.5;
-    }
-
-    col5.ontransitionend = ()=>{
-      checkWin();
-
-      // удаляем лишние элементы в обратном порядке (меньше перерисовок)
-      for(const c of cols){
-        const ditm = c.querySelectorAll('.slot-item');
-        for(let i=ditm.length-1;i>=3;i--){
-          ditm[i].remove();
-        }
-        c.style.transition = '0s';
-        c.style.bottom = '0px';
+        el.appendChild(vid);
       }
 
-      // небольшая задержка для стабилизации рендера на мобильных
-      setTimeout(()=> playCenterVideosWithSound(), 40);
-    };
+      // запускаем воспроизведение без удаления img
+      vid.muted = false;
+      vid.currentTime = 0;
+      vid.play().catch(()=>{ vid.muted = true; vid.play().catch(()=>{}); });
+    }
   }
+}
+
+
+ function Spin(){
+  if(!checkMoney()) return;
+  audioSpin.play().catch(()=>{});
+  userInteracted = true;
+  if(!videosWarmed) warmupPreloadAllVideos();
+
+  updateMoney(money - bet);
+  showMoney();
+  disableBtns();
+  pauseAllVideos();
+  getColumns();
+
+  let tr = 1;
+  const onAllColumnsEnd = () => {
+    // удаляем лишние элементы всех колонок одновременно
+    for(const c of cols){
+      const ditm = c.querySelectorAll('.slot-item');
+      for(let i = ditm.length-1; i >= 3; i--){
+        ditm[i].remove();
+      }
+      c.style.transition = '0s';
+      c.style.bottom = '0px';
+    }
+    // запускаем видео на центральной линии
+    playCenterVideosWithSound();
+    checkWin();
+  };
+
+  let endedCount = 0;
+  const checkEnd = () => { 
+    endedCount++; 
+    if(endedCount === cols.length) onAllColumnsEnd(); 
+  };
+
+  for(const c of cols){
+    c.style.transition = `${tr}s ease-out`;
+    const n = c.querySelectorAll('.slot-item').length;
+    const b = (n - 3) * 160;
+    c.style.bottom = `-${b}px`;
+    tr += 0.5;
+
+    // слушаем transitionend каждой колонки
+    c.ontransitionend = checkEnd;
+  }
+}
+
   btnspin.addEventListener('click', Spin, false);
 
   // checkWin оставляем почти без изменений, только updateMoney при выигрыше
@@ -438,4 +460,4 @@ function startGame(){
 } // end startGame
 
 // если уже есть баланс на старте — можно автоматически запустить игру (опционально)
-// if(money > 0 && !gameStarted){ gameStarted = true; startGame(); }
+// if(money > 0 && !gameStarted){ gameStarted = true; startGame(); }  

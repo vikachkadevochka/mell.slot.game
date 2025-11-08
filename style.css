@@ -442,3 +442,28 @@ header {
 .slot-item { position: relative; overflow: hidden; }
 .slot-thumb { display:block; width:100%; height:100%; object-fit:cover; }
 .slot-video { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+/* ============================= */
+/* --- ФИКС ДЛЯ МОБИЛЬНОЙ ОТРЕСОВКИ (АППАРАТНОЕ УСКОРЕНИЕ) --- */
+/* ============================= */
+
+/* * 1. Применяем аппаратное ускорение к колонкам.
+* Форсирует использование GPU для плавной анимации прокрутки.
+*/
+.column {
+  will-change: transform;
+  transform: translateZ(0); 
+}
+
+/* * 2. Применяем аппаратное ускорение к каждому слоту.
+* Помогает предотвратить "пропажу" элементов во время движения.
+*/
+.slot-item {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* * 3. Убедимся, что все дочерние элементы слота также участвуют в ускоренной отрисовке.
+*/
+.slot-thumb, .slot-video {
+  transform: translateZ(0); 
+}
